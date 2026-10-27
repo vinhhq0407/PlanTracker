@@ -38,6 +38,15 @@ h1{font-size:20px;margin:4px 0 2px}h2{font-size:15px;margin:0 0 8px}.sub{color:v
 textarea,input[type=text]{width:100%;font:inherit;color:var(--tx);border-radius:12px;border:1px solid var(--line);background:var(--bg);padding:10px}
 textarea{min-height:64px;resize:vertical}
 .pl{display:flex;gap:10px;padding:5px 0;font-size:14px;color:var(--mut)}.pl b{width:100px;flex:none;font-weight:600}.pl.cur{color:var(--tx);font-weight:700}.pl.past{opacity:.4}
+#fx{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));left:0;right:0;display:flex;flex-direction:column;align-items:center;gap:6px;z-index:60;pointer-events:none}
+.toast{background:var(--gold);color:#fff;font-weight:700;padding:9px 14px;border-radius:14px;box-shadow:0 4px 14px rgba(0,0,0,.25);animation:pop .3s,fade .4s 2.2s forwards;max-width:92vw;text-align:center}
+@keyframes pop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}@keyframes fade{to{opacity:0;transform:translateY(-10px)}}
+.cf{position:fixed;top:-30px;font-size:24px;z-index:70;pointer-events:none;animation:fall 2s linear forwards}@keyframes fall{to{transform:translateY(110vh) rotate(540deg)}}
+#modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:50;align-items:center;justify-content:center;padding:20px}
+.mc{background:var(--card);border-radius:20px;padding:22px;text-align:center;width:min(360px,100%)}.mt{font-weight:700;font-size:18px;margin-bottom:12px}
+.gift{font-size:84px;cursor:pointer;animation:shake 1s infinite}@keyframes shake{0%,100%{transform:rotate(0)}25%{transform:rotate(-8deg)}75%{transform:rotate(8deg)}}
+.rw{font-size:20px;font-weight:700;padding:10px;margin:6px 0;border-radius:12px;background:var(--gold2);animation:pop .4s}
+.bd{text-align:center;padding:8px 4px;border-radius:12px;background:var(--ac2)}.bd.lock{filter:grayscale(1);opacity:.35}
 #game{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:30;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#fff}
 #cv{background:#101a14;border-radius:12px;width:min(92vw,340px);height:min(92vw,340px);touch-action:none}
 .pad{display:grid;grid-template-columns:repeat(3,64px);gap:6px}.pad button{height:48px;border-radius:12px;border:0;background:#2b3a31;color:#fff;font-size:20px}
@@ -64,8 +73,11 @@ textarea{min-height:64px;resize:vertical}
   <div class="hint" id="loopx" style="margin-top:8px"></div>
   <div class="hint" id="log" style="margin-top:8px"></div>
 </div>
-<div class="card"><h2>Nhiệm vụ phụ</h2><div id="tasks"></div><button class="btn" id="restbtn" style="margin-top:10px"></button></div>
-<div class="card"><h2>🎮 Cửa hàng game</h2><div id="shop"></div></div>
+<div class="card"><h2>🎯 Nhiệm vụ hôm nay</h2><div id="quests"></div><div id="dchest" style="margin-top:8px"></div></div>
+<div class="card"><h2>👹 Boss tuần: 20 giờ</h2><div id="boss"></div></div>
+<div class="card"><h2>🎒 Kho đồ</h2><div id="inv"></div></div>
+<div class="card"><h2>🛒 Cửa hàng</h2><div id="shop"></div></div>
+<div class="card"><h2>🏅 Huy hiệu</h2><div id="badges" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px"></div></div>
 <div class="card"><h2>Tuần này · mục tiêu 20 giờ</h2><div class="week" id="week"></div><div class="bar"><i id="wkbar" style="width:0"></i></div><div class="hint" id="wkx"></div></div>
 <div class="card">
   <h2>Năng lượng hôm nay</h2><div class="row mood" id="mood"></div>
@@ -80,6 +92,7 @@ textarea{min-height:64px;resize:vertical}
 </div>
 </div>
 </main>
+<div id="fx"></div><div id="modal"></div>
 <div id="game">
   <div class="row sp" style="width:min(92vw,340px)"><b>🐍 Snake · điểm: <span id="sc">0</span></b><b id="hs"></b></div>
   <canvas id="cv" width="300" height="300"></canvas>
@@ -88,12 +101,12 @@ textarea{min-height:64px;resize:vertical}
 </div>
 <script>
 const SESS_MAX=120,CAP=240,RATE=10/15,COMBO=90,STREAK=45;
-const TASKS=[{id:'gym',n:'Gym',h:'16:00–18:00',xp:15},{id:'rev',n:'Ôn flashcard 15 phút',h:'sau bữa sáng hoặc giờ nghỉ trưa',xp:5},{id:'caf',n:'Không cà phê sau 13:00',h:'để ngủ được lúc 22:30',xp:5},{id:'slp',n:'Ngủ trước 22:30',h:'giữ giờ dậy 5:00',xp:15}];
-const SHOP=[{id:'snake',n:'🐍 Chơi Snake 1 lượt',h:'mini game trong app',c:10},{id:'g15',n:'⏱ 15 phút chơi game của bạn',h:'có đồng hồ đếm ngược',c:40},{id:'g45',n:'🎮 45 phút chơi game cuối tuần',h:'phần thưởng lớn',c:100}];
+const SHOP=[{id:'snake',n:'🐍 Snake 1 lượt',h:'chơi ngay',c:10},{id:'g15',n:'⏱ 15 phút chơi game',h:'cộng vào vé game',c:40},{id:'g45',n:'🎮 45 phút chơi game',h:'xả hơi cuối tuần',c:100},{id:'box',n:'🎁 Rương may mắn',h:'45% 20 xu · 25% vé 5p · 15% bùa ×2 · 8% khiên · 5% 80 xu · 2% vé 20p. Cứ 6 lần chắc chắn có quà xịn',c:25}];
+const AVA=[['🦊',60],['🐼',120],['🐉',250],['🚀',400]];
 const LV=[[0,'Khởi động'],[10,'Nhập môn'],[30,'Có nhịp'],[60,'Vào guồng'],[100,'Vững nền tảng'],[200,'Sẵn sàng làm project lớn'],[400,'Junior-ready']];
 const MOODS=['😴','😐','🙂','😄'];
 const PLAN=[[300,360,'☕','Dậy, pha cà phê'],[360,450,'📚','Học block 1'],[450,510,'🍳','Ăn sáng, tắm, ôn flashcard'],[510,540,'🧰','Chuẩn bị mở quán'],[540,780,'☕','Làm quán (ca sáng)'],[780,825,'😴','Ăn trưa + ngủ ngắn 20 phút'],[825,945,'📚','Học block 2'],[945,960,'🚶','Nghỉ chuyển ca'],[960,1080,'🏋️','Gym'],[1080,1170,'🍜','Tắm, ăn tối'],[1170,1320,'☕','Làm quán (ca tối)'],[1320,1350,'🌙','Thả lỏng, không màn hình'],[1350,1740,'💤','Ngủ']];
-const DEF=()=>({days:{},spent:0,hi:0,until:0,run:null,log:[],ts:0});
+const DEF=()=>({days:{},spent:0,hi:0,until:0,run:null,log:[],ts:0,bonus:0,gmin:0,inv:{boost:0,shield:0},boost:false,badges:{},opened:0,pity:0,wk:{},avs:['🧑‍💻'],ava:'🧑‍💻',lv:-1});
 const norm=x=>Object.assign(DEF(),x||{});
 let S=DEF();
 try{const l=localStorage.getItem('devquest');if(l)S=norm(JSON.parse(l))}catch(e){}
@@ -103,10 +116,10 @@ const key=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+Stri
 const today=()=>key(new Date());
 const day=k=>S.days[k]||(S.days[k]={mins:0,t:[],mood:0,note:'',rest:false});
 const dm=d=>d?(d.mins!=null?d.mins:(d.loops||0)*15):0;
-const active=k=>{const d=S.days[k];return !!d&&(d.rest||dm(d)>=STREAK)};
+const active=k=>{const d=S.days[k];return !!d&&(d.rest||d.shield||dm(d)>=STREAK)};
 const mins=k=>{const d=S.days[k];return d?dm(d)+((d.t||[]).includes('rev')?15:0):0};
-const earned=k=>{const d=S.days[k];if(!d)return 0;return Math.round(dm(d)*RATE)+(dm(d)>=COMBO?30:0)+TASKS.filter(x=>(d.t||[]).includes(x.id)).reduce((a,x)=>a+x.xp,0)};
-const coins=()=>Object.keys(S.days).reduce((a,k)=>a+earned(k),0)-S.spent;
+const earned=k=>{const d=S.days[k];return d?Math.round(dm(d)*RATE):0};
+const coins=()=>Object.keys(S.days).reduce((a,k)=>a+earned(k),0)+S.bonus-S.spent;
 function weekKeys(){const n=new Date(),w=(n.getDay()+6)%7,o=[];for(let i=0;i<7;i++){const d=new Date(n);d.setDate(n.getDate()-w+i);o.push(key(d))}return o}
 function streak(){let d=new Date(),c=0;if(!active(key(d)))d.setDate(d.getDate()-1);while(active(key(d))){c++;d.setDate(d.getDate()-1)}return c}
 function save(){S.ts=Date.now();try{localStorage.setItem('devquest',JSON.stringify(S))}catch(e){}}
@@ -134,14 +147,9 @@ function render(){
   $('lvl').textContent='Lv.'+(li+1)+' · '+LV[li][1];
   $('lvlx').textContent=nx?'còn '+Math.ceil(nx[0]-th)+'h tới Lv.'+(li+2):'Max level!';
   $('lvlbar').style.width=(nx?(th-LV[li][0])/(nx[0]-LV[li][0])*100:100)+'%';
-  renderSess();
-  $('loopx').textContent=Math.round(L)+' phút hôm nay · mỗi phút = '+RATE.toFixed(2)+' 🪙'+(L>=COMBO?' · 🏆 Combo +30':L>=STREAK?' · đã giữ chuỗi':' · đủ '+STREAK+' phút để giữ chuỗi');
+  renderSess();renderGame();
+  $('loopx').textContent=Math.round(L)+' phút hôm nay · mỗi phút = '+RATE.toFixed(2)+' 🪙'+(L>=COMBO?' · 🏆 vượt mốc 90 phút':L>=STREAK?' · đã giữ chuỗi':' · đủ '+STREAK+' phút để giữ chuỗi');
   $('log').innerHTML=(S.log||[]).slice(-5).reverse().map(x=>x.d.slice(5)+' · '+esc(x.t)+(x.m?' · '+x.m+'′':'')).join('<br>');
-  $('tasks').innerHTML=TASKS.map(x=>`<div class="t ${d.t.includes(x.id)?'on':''}" data-id="${x.id}"><div class="ck">${d.t.includes(x.id)?'✓':''}</div><div><div class="nm">${x.n}</div><div class="hint">${x.h}</div></div><span class="xp">+${x.xp} 🪙</span></div>`).join('');
-  const rc=wk.filter(k=>S.days[k]&&S.days[k].rest&&k!==t).length;
-  $('restbtn').textContent=d.rest?'🌿 Đang là ngày nhẹ (bấm để hủy)':'🌿 Ngày nhẹ '+(rc>=1?'(tuần này đã dùng)':'(giữ chuỗi, 1 lần/tuần)');
-  const c=coins(),left=S.until-Date.now();
-  $('shop').innerHTML=SHOP.map(x=>`<div class="shop"><div><div class="nm">${x.n}</div><div class="hint">${x.h}</div></div><button class="btn b" data-s="${x.id}" ${c<x.c?'disabled':''}>${x.c} 🪙</button></div>`).join('')+(left>0?`<div class="msg" style="margin:10px 0 0">⏱ Còn ${Math.ceil(left/60000)} phút chơi.</div>`:'');
   const dn=['T2','T3','T4','T5','T6','T7','CN'];
   $('week').innerHTML=wk.map((k,i)=>{const dd=S.days[k],r=dd&&dd.rest;return `<div class="d ${r?'rest':active(k)?'on':''} ${k===t?'today':''}"><div>${r?'🌿':active(k)?'✓':''}</div>${dn[i]}</div>`}).join('');
   $('wkbar').style.width=Math.min(100,wm/12)+'%';$('wkx').textContent=(wm/60).toFixed(1)+' / 20 giờ';
@@ -151,21 +159,96 @@ function render(){
 }
 document.addEventListener('click',e=>{
   const g=s=>e.target.closest(s),d=day(today());let ch=false;
-  const t=g('.t'),m=g('[data-m]'),s=g('[data-s]');
-  if(t){const i=d.t.indexOf(t.dataset.id);i<0?d.t.push(t.dataset.id):d.t.splice(i,1);ch=true}
+  const m=g('[data-m]');
   if(m){d.mood=d.mood==+m.dataset.m?0:+m.dataset.m;ch=true}
-  if(g('#restbtn')){const rc=weekKeys().filter(k=>S.days[k]&&S.days[k].rest&&k!==today()).length;if(!d.rest&&rc>=1)return;d.rest=!d.rest;ch=true}
-  if(s){const x=SHOP.find(z=>z.id===s.dataset.s);if(coins()>=x.c){S.spent+=x.c;ch=true;if(x.id==='snake')startGame();else S.until=Math.max(S.until,Date.now())+(x.id==='g15'?15:45)*60000}}
   if(g('#start')){const tp=$('topic').value.trim()||'Học tự do';S.run={topic:tp,start:Date.now()};lpKey='';ch=true}
   if(g('#cancel')){S.run=null;lpKey='';ch=true}
-  if(g('#stop')&&S.run){const mn=Math.min(SESS_MAX,Math.round((Date.now()-S.run.start)/60000)),add=Math.max(0,Math.min(mn,CAP-dm(d)));d.mins=dm(d)+add;S.log=(S.log||[]).concat({d:today(),t:S.run.topic,m:add}).slice(-60);S.run=null;lpKey='';ch=true}
-  if(ch){save();render()}
+  if(g('#stop')&&S.run){const mn=Math.min(SESS_MAX,Math.round((Date.now()-S.run.start)/60000)),add=Math.max(0,Math.min(mn,CAP-dm(d)));d.mins=dm(d)+add;S.log=(S.log||[]).concat({d:today(),t:S.run.topic,m:add,e:nowMin()}).slice(-60);S.run=null;lpKey='';ch=true;sessionSaved(add)}
+  if(gameClick(e,g))ch=true;
+  if(ch){check();save();render()}
 });
-$('note').addEventListener('blur',()=>{day(today()).note=$('note').value;save()});
+$('note').addEventListener('blur',()=>{day(today()).note=$('note').value;check();save();render()});
 $('exp').onclick=()=>{const o=Object.assign({},S);delete o.run;$('io').value=JSON.stringify(o,null,1);$('io').select();try{navigator.clipboard.writeText($('io').value);$('iores').textContent='Đã tạo JSON (đã sao chép nếu trình duyệt cho phép).'}catch(e){$('iores').textContent='Đã tạo JSON, hãy sao chép thủ công.'}};
 function doImport(txt){try{const p=JSON.parse(txt);if(!p||!p.days)throw 0;if(!confirm('Nhập sẽ thay toàn bộ dữ liệu hiện tại. Tiếp tục?'))return;S=norm(Object.assign({},p,{run:null,chat:undefined,hashes:undefined}));save();lpKey='';render();$('iores').textContent='✅ Đã nhập '+Object.keys(S.days).length+' ngày dữ liệu.'}catch(e){$('iores').textContent='❌ JSON không hợp lệ.'}}
 $('imp').onclick=()=>doImport($('io').value);
 $('imf').onchange=e=>{const f=e.target.files[0];if(f){const r=new FileReader();r.onload=()=>doImport(r.result);r.readAsText(f)}};
+/* ===== Game system ===== */
+const nowMin=()=>{const n=new Date();return n.getHours()*60+n.getMinutes()};
+const sess=k=>(S.log||[]).filter(x=>x.d===k);
+const tot=()=>Object.keys(S.days).reduce((a,k)=>a+mins(k),0)/60;
+const POOL=[
+ {id:'two',n:'Hoàn thành 2 phiên học',a:1,c:(d,k)=>sess(k).length>=2},
+ {id:'early',n:'Học xong 1 phiên trước 8:30',a:1,c:(d,k)=>sess(k).some(x=>x.e<510)},
+ {id:'long',n:'Một phiên liền 45 phút',a:1,c:(d,k)=>sess(k).some(x=>x.m>=45)},
+ {id:'note',n:'Viết ghi chú “hôm nay học được gì”',a:1,c:d=>(d.note||'').trim().length>=10},
+ {id:'gym',n:'Đi gym',c:d=>d.t.includes('gym')},
+ {id:'slp',n:'Ngủ trước 22:30',c:d=>d.t.includes('slp')},
+ {id:'caf',n:'Không cà phê sau 13:00',c:d=>d.t.includes('caf')},
+ {id:'rev',n:'Ôn flashcard 15 phút',c:d=>d.t.includes('rev')}];
+const BASEQ={id:'base',n:'Học đủ 45 phút hôm nay',a:1,c:d=>dm(d)>=STREAK};
+function dailyQ(k){let s=(+k.replace(/-/g,''))%2147483647||1;const r=()=>(s=s*48271%2147483647)/2147483647;const a=POOL.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return [BASEQ].concat(a.slice(0,3))}
+const mult=()=>{const s=streak();return s>=14?1.5:s>=7?1.25:s>=3?1.1:1};
+const BADGES=[['first','🌱','Phiên đầu tiên',()=>S.log.length>=1],['s3','🔥','Chuỗi 3 ngày',()=>streak()>=3],['s7','⚡','Chuỗi 7 ngày',()=>streak()>=7],['s14','👑','Chuỗi 14 ngày',()=>streak()>=14],['h10','📘','10 giờ học',()=>tot()>=10],['h50','📗','50 giờ học',()=>tot()>=50],['h100','🏆','100 giờ học',()=>tot()>=100],['early','🌅','Early bird ×3',()=>S.log.filter(x=>x.e<510).length>=3],['ch10','🎁','Mở 10 rương',()=>S.opened>=10]];
+const LOOT=[[45,'💰','+20 xu',()=>{S.bonus+=20}],[25,'🎟','Vé game 5 phút',()=>{S.gmin+=5}],[15,'⚡','Bùa ×2 xu',()=>{S.inv.boost++}],[8,'🛡','Khiên chuỗi',()=>{S.inv.shield++}],[5,'💎','+80 xu',()=>{S.bonus+=80}],[2,'🌟','Vé game 20 phút',()=>{S.gmin+=20}]];
+const vib=()=>{try{navigator.vibrate&&navigator.vibrate(25)}catch(e){}};
+function fx(t){const e=document.createElement('div');e.className='toast';e.textContent=t;$('fx').appendChild(e);setTimeout(()=>e.remove(),2700);vib()}
+function confetti(){const c=['🎉','✨','🪙','⭐','🎊'];for(let i=0;i<28;i++){const s=document.createElement('span');s.className='cf';s.textContent=c[i%5];s.style.left=Math.random()*100+'vw';s.style.animationDelay=Math.random()*.5+'s';document.body.appendChild(s);setTimeout(()=>s.remove(),2700)}}
+function lvIdx(){const t=tot();let i=0;LV.forEach((l,j)=>{if(t>=l[0])i=j});return i}
+function check(){
+  const k=today(),d=day(k);d.q=d.q||[];
+  dailyQ(k).forEach(q=>{if(!d.q.includes(q.id)&&q.c(d,k)){d.q.push(q.id);const r=q.id==='base'?20:15;S.bonus+=r;fx('✅ '+q.n+' · +'+r+' 🪙')}});
+  BADGES.forEach(b=>{if(!S.badges[b[0]]&&b[3]()){S.badges[b[0]]=Date.now();S.bonus+=25;fx(b[1]+' Huy hiệu mới: '+b[2]+' · +25 🪙');confetti()}});
+  const li=lvIdx();if(S.lv<0)S.lv=li;else if(li>S.lv){S.lv=li;S.bonus+=50;fx('🎊 LEVEL UP! Lv.'+(li+1)+' · '+LV[li][1]+' · +50 🪙');confetti()}
+}
+function sessionSaved(add){
+  const f=mult()*(S.boost?2:1),ex=Math.round(add*RATE*(f-1));
+  if(ex>0){S.bonus+=ex;fx('+'+ex+' 🪙 bonus ×'+f)}
+  S.boost=false;fx('📚 +'+add+' phút · +'+Math.round(add*RATE)+' 🪙');
+}
+function roll(){
+  const pool=S.pity>=5?LOOT.slice(1):LOOT;let r=Math.random()*pool.reduce((a,x)=>a+x[0],0),x=pool[pool.length-1];
+  for(const p of pool){if(r<p[0]){x=p;break}r-=p[0]}
+  S.pity=x===LOOT[0]?S.pity+1:0;x[3]();S.opened++;return x}
+function chestModal(n,title){
+  const m=$('modal');m.style.display='flex';
+  m.innerHTML='<div class="mc"><div class="mt">'+title+'</div><div class="gift" id="gift">🎁</div><div class="hint">Chạm để mở</div></div>';
+  $('gift').onclick=()=>{const rs=[];for(let i=0;i<n;i++)rs.push(roll());save();
+    m.innerHTML='<div class="mc"><div class="mt">'+title+'</div>'+rs.map(x=>'<div class="rw">'+x[1]+' '+x[2]+'</div>').join('')+'<button class="big" id="mok" style="margin-top:12px">Nhận</button></div>';
+    confetti();vib();$('mok').onclick=()=>{m.style.display='none';check();save();render()}}}
+const row=(n,h,b)=>'<div class="shop"><div><div class="nm">'+n+'</div><div class="hint">'+h+'</div></div>'+b+'</div>';
+function renderGame(){
+  const k=today(),d=day(k);d.q=d.q||[];const qs=dailyQ(k),m=mult();
+  $('hi').textContent=(S.ava||'🧑‍💻')+' '+$('hi').textContent;
+  $('streak').nextElementSibling.textContent='🔥 chuỗi'+(m>1?' · ×'+m:'');
+  $('quests').innerHTML=qs.map(q=>{const done=d.q.includes(q.id);return '<div class="t q '+(done?'on':'')+'" data-qid="'+q.id+'" data-man="'+(q.a?0:1)+'"><div class="ck">'+(done?'✓':'')+'</div><div><div class="nm">'+q.n+'</div><div class="hint">'+(q.a?'tự động tính':'bấm để tick khi xong')+'</div></div><span class="xp">+'+(q.id==='base'?20:15)+' 🪙</span></div>'}).join('');
+  $('dchest').innerHTML='<div class="bar"><i style="width:'+d.q.length/qs.length*100+'%"></i></div>'+(d.chest?'<div class="hint">🎁 Rương hôm nay đã mở. Mai có nhiệm vụ và rương mới!</div>':d.q.length>=qs.length?'<button class="big" id="qchest" style="margin-top:6px">🎁 Mở rương hôm nay!</button>':'<div class="hint">Xong '+d.q.length+'/'+qs.length+' nhiệm vụ để mở rương ngẫu nhiên</div>');
+  const wk=weekKeys(),wm=wk.reduce((a,x)=>a+mins(x),0),w0=wk[0],lf=Math.max(0,1200-wm);
+  $('boss').innerHTML='<div class="row sp"><b>HP còn '+(lf/60).toFixed(1)+'h</b><span class="hint">'+(wm/60).toFixed(1)+' / 20h</span></div><div class="bar"><i style="width:'+Math.max(0,100-wm/12)+'%;background:var(--gold)"></i></div>'+(S.wk[w0]?'<div class="hint">🏆 Đã hạ boss tuần này!</div>':lf===0?'<button class="big" id="bchest">🎁 Nhận 3 rương hạ boss!</button>':'<div class="hint">Mỗi giờ học là một nhát chém. Hạ boss nhận 3 rương.</div>');
+  const rc=wk.filter(x=>S.days[x]&&S.days[x].rest&&x!==k).length,left=S.until-Date.now();
+  $('inv').innerHTML=row('🎟 Vé game: '+S.gmin+' phút','dùng là bắt đầu đếm ngược','<button class="btn b" id="usetix" '+(S.gmin>0?'':'disabled')+'>▶ Chơi</button>')
+   +row('🛡 Khiên chuỗi: '+S.inv.shield,'giữ chuỗi hôm nay không cần học','<button class="btn" id="useshield" '+(S.inv.shield>0&&!d.shield?'':'disabled')+'>Dùng</button>')
+   +row('⚡ Bùa ×2: '+S.inv.boost,S.boost?'Đang bật cho phiên kế tiếp ✨':'nhân đôi xu phiên học kế tiếp','<button class="btn" id="useboost" '+(S.inv.boost>0&&!S.boost?'':'disabled')+'>Bật</button>')
+   +row('🌿 Ngày nhẹ','giữ chuỗi, miễn phí 1 lần/tuần','<button class="btn" id="rest" '+(!d.rest&&rc>=1?'disabled':'')+'>'+(d.rest?'Hủy':'Dùng')+'</button>')
+   +(left>0?'<div class="msg" style="margin:10px 0 0">⏱ Còn '+Math.ceil(left/60000)+' phút chơi. Hết giờ là quay lại học nhé!</div>':'');
+  const c=coins();
+  $('shop').innerHTML=SHOP.map(x=>row(x.n,x.h,'<button class="btn b" data-s="'+x.id+'" '+(c<x.c?'disabled':'')+'>'+x.c+' 🪙</button>')).join('')
+   +'<div class="hint" style="margin:10px 0 2px">Nhân vật</div>'+AVA.map(a=>row(a[0],S.avs.includes(a[0])?'đã sở hữu':'sưu tầm',S.avs.includes(a[0])?'<button class="btn" data-a="'+a[0]+'" '+(S.ava===a[0]?'disabled':'')+'>'+(S.ava===a[0]?'Đang dùng':'Dùng')+'</button>':'<button class="btn b" data-a="'+a[0]+'" '+(c<a[1]?'disabled':'')+'>'+a[1]+' 🪙</button>')).join('');
+  $('badges').innerHTML=BADGES.map(b=>'<div class="bd '+(S.badges[b[0]]?'':'lock')+'"><div style="font-size:26px">'+b[1]+'</div><div class="hint">'+b[2]+'</div></div>').join('');
+}
+function gameClick(e,g){
+  let ch=false;const d=day(today()),s=g('[data-s]'),a=g('[data-a]'),q=g('.q');
+  if(q&&q.dataset.man==='1'){const i=d.t.indexOf(q.dataset.qid);i<0?d.t.push(q.dataset.qid):d.t.splice(i,1);ch=true}
+  if(s){const x=SHOP.find(z=>z.id===s.dataset.s);if(coins()>=x.c){S.spent+=x.c;ch=true;
+    if(x.id==='snake')startGame();else if(x.id==='g15')S.gmin+=15;else if(x.id==='g45')S.gmin+=45;else chestModal(1,'🎁 Rương may mắn')}}
+  if(a){const v=a.dataset.a,x=AVA.find(z=>z[0]===v);if(S.avs.includes(v)){S.ava=v;ch=true}else if(coins()>=x[1]){S.spent+=x[1];S.avs.push(v);S.ava=v;ch=true;confetti()}}
+  if(g('#qchest')&&!d.chest&&(d.q||[]).length>=4){d.chest=true;ch=true;chestModal(1,'🎁 Rương nhiệm vụ hôm nay')}
+  const w0=weekKeys()[0];
+  if(g('#bchest')&&!S.wk[w0]&&weekKeys().reduce((x,k)=>x+mins(k),0)>=1200){S.wk[w0]=1;ch=true;chestModal(3,'👹 Boss tuần đã bị hạ!')}
+  if(g('#usetix')&&S.gmin>0){S.until=Math.max(S.until,Date.now())+S.gmin*60000;S.gmin=0;ch=true}
+  if(g('#useshield')&&S.inv.shield>0&&!d.shield){S.inv.shield--;d.shield=true;ch=true;fx('🛡 Chuỗi hôm nay đã được bảo vệ')}
+  if(g('#useboost')&&S.inv.boost>0&&!S.boost){S.inv.boost--;S.boost=true;ch=true;fx('⚡ Bùa ×2 đã bật')}
+  if(g('#rest')){const rc=weekKeys().filter(x=>S.days[x]&&S.days[x].rest&&x!==today()).length;if(d.rest){d.rest=false;ch=true}else if(rc<1){d.rest=true;ch=true}}
+  return ch}
 /* Snake */
 let g=null;const cv=$('cv'),cx=cv.getContext('2d'),N=15,C=20;
 function startGame(){$('game').style.display='flex';$('hs').textContent='Kỷ lục: '+S.hi;g={s:[[7,7],[6,7],[5,7]],d:[1,0],nd:[1,0],f:[11,7],sc:0};$('sc').textContent=0;g.iv=setInterval(tick,130);draw()}
@@ -181,7 +264,7 @@ let sx,sy;cv.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touc
 cv.addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;if(Math.max(Math.abs(dx),Math.abs(dy))<20)return;dir(Math.abs(dx)>Math.abs(dy)?(dx>0?'R':'L'):(dy>0?'D':'U'))});
 $('closeg').onclick=()=>{if(g)clearInterval(g.iv);g=null;$('game').style.display='none'};
 render();renderPlan();setInterval(renderPlan,1000);setInterval(render,60000);
-if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{})}catch(e){}
 </script>
 </body>
 </html>
