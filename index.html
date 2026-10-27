@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2f7d5b">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg">
+<title>Dev Quest</title>
+<style>
+:root{--bg:#f6f4ef;--card:#fff;--tx:#1f2421;--mut:#6b726d;--ac:#2f7d5b;--ac2:#e8f3ed;--line:#e4e1d8;--gold:#d98b2b;--gold2:#fdf1dd}
+@media (prefers-color-scheme:dark){:root{--bg:#141815;--card:#1d231f;--tx:#eef1ee;--mut:#9aa39c;--ac:#5fc596;--ac2:#22372c;--line:#2b332d;--gold:#f0a94a;--gold2:#3a2f1c;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
+main{max-width:520px;margin:0 auto;padding:16px 16px 40px}
+h1{font-size:20px;margin:4px 0 2px}h2{font-size:15px;margin:0 0 8px}.sub{color:var(--mut);font-size:14px;margin:0 0 12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px;break-inside:avoid}
+@media(min-width:900px){main{max-width:1080px;padding:28px}h1{font-size:26px}.cols{column-count:2;column-gap:16px}.card{padding:18px}}
+.row{display:flex;align-items:center;gap:10px}.sp{justify-content:space-between}
+.stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.stat{background:var(--ac2);border-radius:12px;padding:10px;text-align:center}.stat.g{background:var(--gold2)}
+.stat b{display:block;font-size:22px}.stat span{font-size:12px;color:var(--mut)}
+.bar{height:10px;background:var(--line);border-radius:6px;overflow:hidden;margin:8px 0 4px}.bar i{display:block;height:100%;background:var(--ac);border-radius:6px}
+.msg{background:var(--ac2);border-radius:12px;padding:10px 12px;font-size:14px;margin-bottom:12px}
+.big{width:100%;border:0;border-radius:14px;background:var(--ac);color:#fff;font:700 17px inherit;padding:15px;cursor:pointer}
+.hint{font-size:13px;color:var(--mut)}.nm{font-weight:600}
+.t{display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid var(--line);cursor:pointer}.t:last-child{border:0}
+.ck{width:26px;height:26px;border-radius:9px;border:2px solid var(--line);flex:none;display:grid;place-items:center;font-size:15px;color:#fff}
+.t.on .ck{background:var(--ac);border-color:var(--ac)}.t.on .nm{color:var(--mut);text-decoration:line-through}
+.xp{margin-left:auto;font-size:12px;color:var(--gold);font-weight:700;white-space:nowrap}
+.shop{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.shop:last-child{border:0}.shop div{flex:1}
+.btn{border:1px solid var(--line);background:none;color:var(--tx);border-radius:12px;padding:9px 12px;font:inherit;font-size:14px;cursor:pointer}
+.btn.b{background:var(--gold);border-color:var(--gold);color:#fff;font-weight:700}.btn:disabled{opacity:.4}
+.week{display:flex;gap:6px}.d{flex:1;text-align:center;font-size:12px;color:var(--mut)}
+.d div{height:34px;border-radius:10px;background:var(--line);margin-bottom:4px;display:grid;place-items:center}
+.d.on div{background:var(--ac);color:#fff}.d.rest div{background:var(--gold);color:#fff}.d.today div{outline:2px solid var(--tx);outline-offset:1px}
+.mood button{flex:1;font-size:24px;padding:8px 0;border-radius:12px;border:2px solid var(--line);background:none;cursor:pointer}.mood button.on{border-color:var(--ac);background:var(--ac2)}
+textarea,input[type=text]{width:100%;font:inherit;color:var(--tx);border-radius:12px;border:1px solid var(--line);background:var(--bg);padding:10px}
+textarea{min-height:64px;resize:vertical}
+.pl{display:flex;gap:10px;padding:5px 0;font-size:14px;color:var(--mut)}.pl b{width:100px;flex:none;font-weight:600}.pl.cur{color:var(--tx);font-weight:700}.pl.past{opacity:.4}
+#game{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:30;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#fff}
+#cv{background:#101a14;border-radius:12px;width:min(92vw,340px);height:min(92vw,340px);touch-action:none}
+.pad{display:grid;grid-template-columns:repeat(3,64px);gap:6px}.pad button{height:48px;border-radius:12px;border:0;background:#2b3a31;color:#fff;font-size:20px}
+</style>
+</head>
+<body>
+<main>
+<h1 id="hi">Dev Quest</h1>
+<p class="sub" id="date"></p>
+<div class="msg" id="msg"></div>
+<div class="cols">
+<div class="card"><h2>🗓 Lịch hôm nay</h2><div id="now"></div><div id="sched" style="margin-top:10px"></div></div>
+<div class="card">
+  <div class="stats">
+    <div class="stat g"><b id="coin">0</b><span>🪙 xu</span></div>
+    <div class="stat"><b id="streak">0</b><span>🔥 chuỗi ngày</span></div>
+    <div class="stat"><b id="tot">0h</b><span>tổng giờ học</span></div>
+  </div>
+  <div class="row sp" style="margin-top:12px"><b id="lvl"></b><span class="hint" id="lvlx"></span></div>
+  <div class="bar"><i id="lvlbar" style="width:0"></i></div>
+</div>
+<div class="card">
+  <h2>Phiên học</h2><div id="lp"></div>
+  <div class="hint" id="loopx" style="margin-top:8px"></div>
+  <div class="hint" id="log" style="margin-top:8px"></div>
+</div>
+<div class="card"><h2>Nhiệm vụ phụ</h2><div id="tasks"></div><button class="btn" id="restbtn" style="margin-top:10px"></button></div>
+<div class="card"><h2>🎮 Cửa hàng game</h2><div id="shop"></div></div>
+<div class="card"><h2>Tuần này · mục tiêu 20 giờ</h2><div class="week" id="week"></div><div class="bar"><i id="wkbar" style="width:0"></i></div><div class="hint" id="wkx"></div></div>
+<div class="card">
+  <h2>Năng lượng hôm nay</h2><div class="row mood" id="mood"></div>
+  <h2 style="margin-top:14px">Hôm nay mình học được gì?</h2><textarea id="note" placeholder="1-2 câu thôi…"></textarea>
+</div>
+<div class="card">
+  <h2>📦 Xuất / nhập dữ liệu</h2>
+  <div class="hint" style="margin-bottom:8px">Dán JSON xuất từ trang Claude vào đây rồi bấm Nhập. Dùng nút Xuất để sao lưu hoặc chuyển giữa các máy.</div>
+  <textarea id="io" style="min-height:90px" placeholder="Dán JSON ở đây"></textarea>
+  <div class="row" style="margin-top:8px;flex-wrap:wrap"><button class="btn" id="imp">⬆ Nhập</button><button class="btn" id="exp">⬇ Xuất</button><input type="file" id="imf" accept=".json,application/json" style="font-size:13px"></div>
+  <div class="hint" id="iores" style="margin-top:6px"></div>
+</div>
+</div>
+</main>
+<div id="game">
+  <div class="row sp" style="width:min(92vw,340px)"><b>🐍 Snake · điểm: <span id="sc">0</span></b><b id="hs"></b></div>
+  <canvas id="cv" width="300" height="300"></canvas>
+  <div class="pad"><span></span><button data-k="U">▲</button><span></span><button data-k="L">◀</button><button data-k="D">▼</button><button data-k="R">▶</button></div>
+  <button class="btn" id="closeg" style="color:#fff;border-color:#fff">Thoát</button>
+</div>
+<script>
+const SESS_MAX=120,CAP=240,RATE=10/15,COMBO=90,STREAK=45;
+const TASKS=[{id:'gym',n:'Gym',h:'16:00–18:00',xp:15},{id:'rev',n:'Ôn flashcard 15 phút',h:'sau bữa sáng hoặc giờ nghỉ trưa',xp:5},{id:'caf',n:'Không cà phê sau 13:00',h:'để ngủ được lúc 22:30',xp:5},{id:'slp',n:'Ngủ trước 22:30',h:'giữ giờ dậy 5:00',xp:15}];
+const SHOP=[{id:'snake',n:'🐍 Chơi Snake 1 lượt',h:'mini game trong app',c:10},{id:'g15',n:'⏱ 15 phút chơi game của bạn',h:'có đồng hồ đếm ngược',c:40},{id:'g45',n:'🎮 45 phút chơi game cuối tuần',h:'phần thưởng lớn',c:100}];
+const LV=[[0,'Khởi động'],[10,'Nhập môn'],[30,'Có nhịp'],[60,'Vào guồng'],[100,'Vững nền tảng'],[200,'Sẵn sàng làm project lớn'],[400,'Junior-ready']];
+const MOODS=['😴','😐','🙂','😄'];
+const PLAN=[[300,360,'☕','Dậy, pha cà phê'],[360,450,'📚','Học block 1'],[450,510,'🍳','Ăn sáng, tắm, ôn flashcard'],[510,540,'🧰','Chuẩn bị mở quán'],[540,780,'☕','Làm quán (ca sáng)'],[780,825,'😴','Ăn trưa + ngủ ngắn 20 phút'],[825,945,'📚','Học block 2'],[945,960,'🚶','Nghỉ chuyển ca'],[960,1080,'🏋️','Gym'],[1080,1170,'🍜','Tắm, ăn tối'],[1170,1320,'☕','Làm quán (ca tối)'],[1320,1350,'🌙','Thả lỏng, không màn hình'],[1350,1740,'💤','Ngủ']];
+const DEF=()=>({days:{},spent:0,hi:0,until:0,run:null,log:[],ts:0});
+const norm=x=>Object.assign(DEF(),x||{});
+let S=DEF();
+try{const l=localStorage.getItem('devquest');if(l)S=norm(JSON.parse(l))}catch(e){}
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const key=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const today=()=>key(new Date());
+const day=k=>S.days[k]||(S.days[k]={mins:0,t:[],mood:0,note:'',rest:false});
+const dm=d=>d?(d.mins!=null?d.mins:(d.loops||0)*15):0;
+const active=k=>{const d=S.days[k];return !!d&&(d.rest||dm(d)>=STREAK)};
+const mins=k=>{const d=S.days[k];return d?dm(d)+((d.t||[]).includes('rev')?15:0):0};
+const earned=k=>{const d=S.days[k];if(!d)return 0;return Math.round(dm(d)*RATE)+(dm(d)>=COMBO?30:0)+TASKS.filter(x=>(d.t||[]).includes(x.id)).reduce((a,x)=>a+x.xp,0)};
+const coins=()=>Object.keys(S.days).reduce((a,k)=>a+earned(k),0)-S.spent;
+function weekKeys(){const n=new Date(),w=(n.getDay()+6)%7,o=[];for(let i=0;i<7;i++){const d=new Date(n);d.setDate(n.getDate()-w+i);o.push(key(d))}return o}
+function streak(){let d=new Date(),c=0;if(!active(key(d)))d.setDate(d.getDate()-1);while(active(key(d))){c++;d.setDate(d.getDate()-1)}return c}
+function save(){S.ts=Date.now();try{localStorage.setItem('devquest',JSON.stringify(S))}catch(e){}}
+const hm=x=>{x=Math.round(x)%1440;return String(Math.floor(x/60)).padStart(2,'0')+':'+String(x%60).padStart(2,'0')};
+const cdf=s=>{s=Math.max(0,Math.ceil(s));const h=Math.floor(s/3600),mi=Math.floor(s%3600/60),se=s%60;return (h?h+':':'')+String(mi).padStart(2,'0')+':'+String(se).padStart(2,'0')};
+function renderPlan(){
+  const n=new Date();let m=n.getHours()*60+n.getMinutes()+n.getSeconds()/60;if(m<300)m+=1440;
+  const i=PLAN.findIndex(p=>m>=p[0]&&m<p[1]),cur=PLAN[i],nx=PLAN[i+1]||PLAN[0];
+  $('now').innerHTML='<div class="row sp"><div class="nm">'+cur[2]+' '+cur[3]+'</div><span class="hint">'+hm(cur[0])+'–'+hm(cur[1])+'</span></div><div style="font-size:30px;font-weight:700;margin:4px 0">'+cdf((cur[1]-m)*60)+'</div><div class="bar"><i style="width:'+Math.min(100,(m-cur[0])/(cur[1]-cur[0])*100)+'%"></i></div><div class="hint">Tiếp theo: '+hm(nx[0])+' '+nx[2]+' '+nx[3]+'</div>';
+  $('sched').innerHTML=PLAN.map((p,j)=>'<div class="pl '+(j===i?'cur':m>=p[1]?'past':'')+'"><b>'+hm(p[0])+'–'+hm(p[1])+'</b><span>'+p[2]+' '+p[3]+'</span></div>').join('');
+  tickSess();
+}
+let lpKey='';
+function renderSess(){const r=S.run,L=dm(day(today()));const k=r?'run':'idle'+(L>=CAP);if(k===lpKey)return;lpKey=k;
+  $('lp').innerHTML=r?'<div class="nm">📚 '+esc(r.topic)+'</div><div style="font-size:28px;font-weight:700;margin:6px 0" id="el"></div><button class="big" id="stop">Kết thúc & lưu</button><button class="btn" id="cancel" style="margin-top:8px">Hủy phiên</button>':L>=CAP?'<div class="hint">Đã đủ 4 giờ hôm nay. Nghỉ đi, não cần thời gian củng cố 🧠</div>':'<input type="text" id="topic" placeholder="Phiên này học gì? (vd: CSS flexbox)" style="margin-bottom:10px"><button class="big" id="start">▶ Bắt đầu phiên học</button><div class="hint" style="margin-top:8px">Chế độ tự giác: app tính theo đồng hồ. Sẽ chính xác hơn khi có extension VS Code / trình duyệt gửi dữ liệu.</div>'}
+function tickSess(){const r=S.run;if(!r)return;const e=$('el');if(e)e.textContent=cdf((Date.now()-r.start)/1000)}
+function render(){
+  const t=today(),d=day(t),n=new Date(),h=n.getHours(),L=dm(d);
+  $('hi').textContent=h<11?'Sáng nay vào game học nào ☀️':h<18?'Chiều nay cày tiếp 💪':'Tối nay chốt ngày 🌙';
+  $('date').textContent=n.toLocaleDateString('vi-VN',{weekday:'long',day:'numeric',month:'long'});
+  const st=streak();$('streak').textContent=st;$('coin').textContent=coins();
+  const wk=weekKeys(),wm=wk.reduce((a,k)=>a+mins(k),0),tm=Object.keys(S.days).reduce((a,k)=>a+mins(k),0),th=tm/60;
+  $('tot').textContent=Math.floor(th)+'h';
+  let li=0;LV.forEach((l,i)=>{if(th>=l[0])li=i});const nx=LV[li+1];
+  $('lvl').textContent='Lv.'+(li+1)+' · '+LV[li][1];
+  $('lvlx').textContent=nx?'còn '+Math.ceil(nx[0]-th)+'h tới Lv.'+(li+2):'Max level!';
+  $('lvlbar').style.width=(nx?(th-LV[li][0])/(nx[0]-LV[li][0])*100:100)+'%';
+  renderSess();
+  $('loopx').textContent=Math.round(L)+' phút hôm nay · mỗi phút = '+RATE.toFixed(2)+' 🪙'+(L>=COMBO?' · 🏆 Combo +30':L>=STREAK?' · đã giữ chuỗi':' · đủ '+STREAK+' phút để giữ chuỗi');
+  $('log').innerHTML=(S.log||[]).slice(-5).reverse().map(x=>x.d.slice(5)+' · '+esc(x.t)+(x.m?' · '+x.m+'′':'')).join('<br>');
+  $('tasks').innerHTML=TASKS.map(x=>`<div class="t ${d.t.includes(x.id)?'on':''}" data-id="${x.id}"><div class="ck">${d.t.includes(x.id)?'✓':''}</div><div><div class="nm">${x.n}</div><div class="hint">${x.h}</div></div><span class="xp">+${x.xp} 🪙</span></div>`).join('');
+  const rc=wk.filter(k=>S.days[k]&&S.days[k].rest&&k!==t).length;
+  $('restbtn').textContent=d.rest?'🌿 Đang là ngày nhẹ (bấm để hủy)':'🌿 Ngày nhẹ '+(rc>=1?'(tuần này đã dùng)':'(giữ chuỗi, 1 lần/tuần)');
+  const c=coins(),left=S.until-Date.now();
+  $('shop').innerHTML=SHOP.map(x=>`<div class="shop"><div><div class="nm">${x.n}</div><div class="hint">${x.h}</div></div><button class="btn b" data-s="${x.id}" ${c<x.c?'disabled':''}>${x.c} 🪙</button></div>`).join('')+(left>0?`<div class="msg" style="margin:10px 0 0">⏱ Còn ${Math.ceil(left/60000)} phút chơi.</div>`:'');
+  const dn=['T2','T3','T4','T5','T6','T7','CN'];
+  $('week').innerHTML=wk.map((k,i)=>{const dd=S.days[k],r=dd&&dd.rest;return `<div class="d ${r?'rest':active(k)?'on':''} ${k===t?'today':''}"><div>${r?'🌿':active(k)?'✓':''}</div>${dn[i]}</div>`}).join('');
+  $('wkbar').style.width=Math.min(100,wm/12)+'%';$('wkx').textContent=(wm/60).toFixed(1)+' / 20 giờ';
+  $('mood').innerHTML=MOODS.map((m,i)=>`<button class="${d.mood===i+1?'on':''}" data-m="${i+1}">${m}</button>`).join('');
+  if(document.activeElement!==$('note'))$('note').value=d.note||'';
+  $('msg').textContent=L>=COMBO?'🏆 Combo! Đi chơi game thôi.':L>=STREAK?'🔥 Chuỗi đã được giữ.':st>0?'Chuỗi '+st+' ngày. Chỉ cần '+STREAK+' phút hôm nay để giữ nó.':'Bắt đầu một phiên học để mở chuỗi mới.';
+}
+document.addEventListener('click',e=>{
+  const g=s=>e.target.closest(s),d=day(today());let ch=false;
+  const t=g('.t'),m=g('[data-m]'),s=g('[data-s]');
+  if(t){const i=d.t.indexOf(t.dataset.id);i<0?d.t.push(t.dataset.id):d.t.splice(i,1);ch=true}
+  if(m){d.mood=d.mood==+m.dataset.m?0:+m.dataset.m;ch=true}
+  if(g('#restbtn')){const rc=weekKeys().filter(k=>S.days[k]&&S.days[k].rest&&k!==today()).length;if(!d.rest&&rc>=1)return;d.rest=!d.rest;ch=true}
+  if(s){const x=SHOP.find(z=>z.id===s.dataset.s);if(coins()>=x.c){S.spent+=x.c;ch=true;if(x.id==='snake')startGame();else S.until=Math.max(S.until,Date.now())+(x.id==='g15'?15:45)*60000}}
+  if(g('#start')){const tp=$('topic').value.trim()||'Học tự do';S.run={topic:tp,start:Date.now()};lpKey='';ch=true}
+  if(g('#cancel')){S.run=null;lpKey='';ch=true}
+  if(g('#stop')&&S.run){const mn=Math.min(SESS_MAX,Math.round((Date.now()-S.run.start)/60000)),add=Math.max(0,Math.min(mn,CAP-dm(d)));d.mins=dm(d)+add;S.log=(S.log||[]).concat({d:today(),t:S.run.topic,m:add}).slice(-60);S.run=null;lpKey='';ch=true}
+  if(ch){save();render()}
+});
+$('note').addEventListener('blur',()=>{day(today()).note=$('note').value;save()});
+$('exp').onclick=()=>{const o=Object.assign({},S);delete o.run;$('io').value=JSON.stringify(o,null,1);$('io').select();try{navigator.clipboard.writeText($('io').value);$('iores').textContent='Đã tạo JSON (đã sao chép nếu trình duyệt cho phép).'}catch(e){$('iores').textContent='Đã tạo JSON, hãy sao chép thủ công.'}};
+function doImport(txt){try{const p=JSON.parse(txt);if(!p||!p.days)throw 0;if(!confirm('Nhập sẽ thay toàn bộ dữ liệu hiện tại. Tiếp tục?'))return;S=norm(Object.assign({},p,{run:null,chat:undefined,hashes:undefined}));save();lpKey='';render();$('iores').textContent='✅ Đã nhập '+Object.keys(S.days).length+' ngày dữ liệu.'}catch(e){$('iores').textContent='❌ JSON không hợp lệ.'}}
+$('imp').onclick=()=>doImport($('io').value);
+$('imf').onchange=e=>{const f=e.target.files[0];if(f){const r=new FileReader();r.onload=()=>doImport(r.result);r.readAsText(f)}};
+/* Snake */
+let g=null;const cv=$('cv'),cx=cv.getContext('2d'),N=15,C=20;
+function startGame(){$('game').style.display='flex';$('hs').textContent='Kỷ lục: '+S.hi;g={s:[[7,7],[6,7],[5,7]],d:[1,0],nd:[1,0],f:[11,7],sc:0};$('sc').textContent=0;g.iv=setInterval(tick,130);draw()}
+function tick(){if(!g)return;g.d=g.nd;const h=[g.s[0][0]+g.d[0],g.s[0][1]+g.d[1]];
+  if(h[0]<0||h[1]<0||h[0]>=N||h[1]>=N||g.s.some(p=>p[0]==h[0]&&p[1]==h[1]))return over();
+  g.s.unshift(h);if(h[0]==g.f[0]&&h[1]==g.f[1]){g.sc++;$('sc').textContent=g.sc;do{g.f=[Math.floor(Math.random()*N),Math.floor(Math.random()*N)]}while(g.s.some(p=>p[0]==g.f[0]&&p[1]==g.f[1]))}else g.s.pop();draw()}
+function draw(){cx.fillStyle='#101a14';cx.fillRect(0,0,300,300);cx.fillStyle='#f0a94a';cx.fillRect(g.f[0]*C+3,g.f[1]*C+3,C-6,C-6);g.s.forEach((p,i)=>{cx.fillStyle=i?'#5fc596':'#9be8c0';cx.fillRect(p[0]*C+1,p[1]*C+1,C-2,C-2)})}
+function over(){clearInterval(g.iv);cx.fillStyle='rgba(0,0,0,.6)';cx.fillRect(0,0,300,300);cx.fillStyle='#fff';cx.font='bold 22px system-ui';cx.textAlign='center';cx.fillText('Game over · '+g.sc+' điểm',150,155);if(g.sc>S.hi){S.hi=g.sc;$('hs').textContent='Kỷ lục: '+S.hi;save()}}
+function dir(k){if(!g)return;const m={U:[0,-1],D:[0,1],L:[-1,0],R:[1,0]}[k];if(m&&(m[0]+g.d[0]||m[1]+g.d[1]))g.nd=m}
+document.querySelectorAll('.pad button').forEach(b=>b.onclick=()=>dir(b.dataset.k));
+document.addEventListener('keydown',e=>{if(g)dir({ArrowUp:'U',ArrowDown:'D',ArrowLeft:'L',ArrowRight:'R'}[e.key])});
+let sx,sy;cv.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY},{passive:true});
+cv.addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;if(Math.max(Math.abs(dx),Math.abs(dy))<20)return;dir(Math.abs(dx)>Math.abs(dy)?(dx>0?'R':'L'):(dy>0?'D':'U'))});
+$('closeg').onclick=()=>{if(g)clearInterval(g.iv);g=null;$('game').style.display='none'};
+render();renderPlan();setInterval(renderPlan,1000);setInterval(render,60000);
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
